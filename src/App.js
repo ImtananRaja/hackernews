@@ -22,21 +22,48 @@ const list = [
   }
 ]
 
+const person = {
+  name: 'John',
+  age: 34,
+  food: 'Chicken'
+}
+
 export default class App extends Component {
 
-  render() {
-    const person = {
-      name: 'John',
-      age: 34,
-      food: 'Chicken'
+  constructor(props){
+    super(props)
+
+    this.state = {
+      list: list,
+      person: person,
     }
+
+    this.onDismiss = this._onDismiss.bind(this)
+  }
+
+  _onDismiss(id) {
+    const isNotId = (item) => {
+      return item.objectID !== id
+    }
+
+    const updatedList = this.state.list.filter(isNotId)
+
+    this.setState({ list: updatedList })
+  }
+
+
+  render() {
+
     const helloWorld = 'Welcome todse theade Rdoad tertao learn react';
     return (
       <div className="App">
         <h2>{helloWorld}</h2>
-        <p>{person.name}</p>
+        <p>{this.state.person.name}</p>
         {
-          list.map(item => {
+          //if you were to get the rid of the this.state
+          //and then click dismiss button it wouldn't work
+          //because the list it is using now is the const list not state 
+          this.state.list.map(item => {
             return (
               <div key={item.objectID}>
                 <span>
@@ -45,6 +72,14 @@ export default class App extends Component {
                 <span>{item.author}</span>
                 <span>{item.num_comments}</span>
                 <span>{item.points}</span>
+                <span>
+                  <button
+                    onClick={() => this._onDismiss(item.objectID)}
+                    type="button"
+                  >
+                    Dismiss
+                  </button>
+                </span>
               </div>
             )
           })
