@@ -28,6 +28,8 @@ const person = {
   food: 'Chicken'
 }
 
+const isSearched = searchTerm => item => item.title.toLowerCase().includes(searchTerm.toLowerCase()); 
+
 export default class App extends Component {
 
   constructor(props){
@@ -36,55 +38,143 @@ export default class App extends Component {
     this.state = {
       list: list,
       person: person,
+      show: false,
+      searchTerm: '',
     }
 
-    this.onDismiss = this._onDismiss.bind(this)
+    //one way to bind to class
+    this._onSearchChange = this._onSearchChange.bind(this)
+
+    //this._onDismiss = this._onDismiss.bind(this)
   }
 
-  _onDismiss(id) {
-    const isNotId = (item) => {
-      return item.objectID !== id
-    }
+  //_onDismiss(id) {
+  //  const isNotId = (item) => {
+  //    return item.objectID !== id
+  //  }
 
+  //  const updatedList = this.state.list.filter(isNotId)
+
+  //  this.setState({ list: updatedList })
+  //}
+
+  _onSearchChange(event) {
+    this.setState({ searchTerm : event.target.value })
+  }
+
+  //another way to bing to the class
+  _onDismiss = (id) => {
+    const isNotId = (item) => (item.objectID !== id)
     const updatedList = this.state.list.filter(isNotId)
-
-    this.setState({ list: updatedList })
+    this.setState({ list: updatedList})
   }
 
+  showMe = () => {
+    this.setState({ show: true })
+  }
+
+  hideMe = () => {
+    this.setState({ show: false })
+  }
 
   render() {
-
+    const { person, list, searchTerm, show } = this.state
     const helloWorld = 'Welcome todse theade Rdoad tertao learn react';
     return (
       <div className="App">
         <h2>{helloWorld}</h2>
-        <p>{this.state.person.name}</p>
-        {
-          //if you were to get the rid of the this.state
-          //and then click dismiss button it wouldn't work
-          //because the list it is using now is the const list not state 
-          this.state.list.map(item => {
-            return (
-              <div key={item.objectID}>
-                <span>
-                  <a href={item.url}>{item.title}</a>
-                </span>
-                <span>{item.author}</span>
-                <span>{item.num_comments}</span>
-                <span>{item.points}</span>
-                <span>
-                  <button
-                    onClick={() => this._onDismiss(item.objectID)}
-                    type="button"
-                  >
-                    Dismiss
-                  </button>
-                </span>
-              </div>
-            )
-          })
-        }
+        <p>{person.name}</p>
+        <Search
+          value={searchTerm}
+          onChange={this._onSearchChange}
+          testing="Hello"
+        >
+          //The children only holds jsx
+          Search
+          </Search>
+
+        <Table
+          list={list}
+          pattern={searchTerm}
+          _onDismiss={this._onDismiss}
+        />
       </div>
     )
+  }
+}
+
+
+class Search extends Component {
+  constructor(props) {
+    super(props)
+  }
+
+  render() {
+    const { value, onChange, children } = this.props;
+
+    return (
+      <form>
+        {children} <input
+          type="text"
+          value={value}
+          onChange={onChange}
+        />
+      </form>
+    );
+  }
+}
+
+class Table extends Component {
+  constructor(props) {
+    super(props)
+  }
+
+  render() {
+    const { list, _onDismiss, pattern } = this.props;
+    return (
+      <div>
+        {list.filter(isSearched(pattern)).map(item =>
+          <div key={item.objectID}>
+            <span>
+              <a href={item.url}>{item.title}</a>
+            </span>
+            <span>{item.author}</span>
+            <span>{item.num_comments}</span>
+            <span>{item.points}</span>
+            <span>
+              <Button onClick={() => _onDismiss(item.objectID)} className="dismiss">
+                Dismiss
+              </Button>
+            </span>
+          
+          </div>)}
+
+      </div>
+    );
+  }
+}
+
+class Button extends Component {
+  constructor(props) {
+    super(props)
+  }
+
+  render() {
+
+    const {
+      onClick,
+      className = '',
+      children
+    } = this.props;
+
+    return (
+      <button
+        onClick={onClick}
+        className={className}
+        type="button"
+      >
+        {children}
+      </button>
+    );
   }
 }
