@@ -1,7 +1,13 @@
 import React, { Component } from 'react'
 import './App.css'
 
+const DEFAULT_QUERY = 'redux';
 
+const PATH_BASE = 'https://hn.algolia.com/api/v1';
+const PATH_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+
+//const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
 
 const list = [
   {
@@ -39,8 +45,11 @@ export default class App extends Component {
       list: list,
       person: person,
       show: false,
-      searchTerm: '',
+      searchTerm: DEFAULT_QUERY,
+      result: null,
     }
+
+    this._setSearchStories = this._setSearchStories.bind(this);
 
     //one way to bind to class
     this._onSearchChange = this._onSearchChange.bind(this)
@@ -48,13 +57,24 @@ export default class App extends Component {
     //this._onDismiss = this._onDismiss.bind(this)
   }
 
+  _setSearchStories(result) {
+    this.setState({ result })
+  }
+
+  componentDidMount() {
+    const { searchTerm } = this.state;
+
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
+    .then(data => data.json())
+    .then(result => this._setSearchStories(result))
+    .then(error => error)
+  }
+
   //_onDismiss(id) {
   //  const isNotId = (item) => {
   //    return item.objectID !== id
   //  }
-
   //  const updatedList = this.state.list.filter(isNotId)
-
   //  this.setState({ list: updatedList })
   //}
 
@@ -62,11 +82,12 @@ export default class App extends Component {
     this.setState({ searchTerm : event.target.value })
   }
 
-  //another way to bing to the class
+  //another way to bind to the class
   _onDismiss = (id) => {
     const isNotId = (item) => (item.objectID !== id)
-    const updatedList = this.state.list.filter(isNotId)
-    this.setState({ list: updatedList})
+    const updatedHits = this.state.result.hits.filter(isNotId)
+    //this.setState({ result: Object.assign({}, this.state.result, { hits: updatedHits }) })
+    this.setState({ result: { ...this.state.result, hits: updatedHits } })
   }
 
   showMe = () => {
@@ -78,8 +99,9 @@ export default class App extends Component {
   }
 
   render() {
-    const { person, list, searchTerm, show } = this.state
+    const { result, searchTerm, show } = this.state
     const helloWorld = 'Welcome todse theade Rdoad tertao learn react';
+    if (!result) { return null }
     return (
       <div className="page">
         <div className="interactions">
@@ -95,7 +117,7 @@ export default class App extends Component {
           </Search>
         </div>
         <Table
-          list={list}
+          list={result.hits}
           pattern={searchTerm}
           _onDismiss={this._onDismiss}
         />
