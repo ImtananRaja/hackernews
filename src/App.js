@@ -87,7 +87,9 @@ export default class App extends Component {
     const isNotId = (item) => (item.objectID !== id)
     const updatedHits = this.state.result.hits.filter(isNotId)
     //this.setState({ result: Object.assign({}, this.state.result, { hits: updatedHits }) })
-    this.setState({ result: { ...this.state.result, hits: updatedHits } })
+    this.setState({ 
+      result: { ...this.state.result, hits: updatedHits } 
+    })
   }
 
   showMe = () => {
