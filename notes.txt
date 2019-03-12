@@ -1,0 +1,19 @@
+If you face an npm start problem which says something like this
+
+'Error: ENOSPC: System limit for number of file watchers reached'
+
+got to this link https://github.com/guard/listen/wiki/Increasing-the-amount-of-inotify-watchers#the-technical-details
+
+or you can just run theses commands from ubuntu:
+
+You can set a new limit temporary with:
+
+$ sudo sysctl fs.inotify.max_user_watches=524288
+$ sudo sysctl -p
+
+OR 
+
+If you like to make your limit permanent, use:
+
+$ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
+$ sudo sysctl -p

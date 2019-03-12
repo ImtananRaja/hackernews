@@ -88,6 +88,7 @@ export default class App extends Component {
     const updatedHits = this.state.result.hits.filter(isNotId)
     //this.setState({ result: Object.assign({}, this.state.result, { hits: updatedHits }) })
     this.setState({ 
+      //object spread operator used here, because of the complex result object
       result: { ...this.state.result, hits: updatedHits } 
     })
   }
@@ -118,11 +119,14 @@ export default class App extends Component {
             Search
           </Search>
         </div>
-        <Table
-          list={result.hits}
-          pattern={searchTerm}
-          _onDismiss={this._onDismiss}
-        />
+        { result
+          ? <Table
+            list={result.hits}
+            pattern={searchTerm}
+            _onDismiss={this._onDismiss}
+          />
+         : null
+        }
       </div>
     )
   }
