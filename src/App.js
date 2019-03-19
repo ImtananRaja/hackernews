@@ -2,10 +2,13 @@ import React, { Component } from 'react'
 import './App.css'
 
 const DEFAULT_QUERY = 'redux';
+const DEFAULT_HPP = '100';
 
 const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+const PARAM_HPP = 'hitsPerPage=';
 
 //const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
 
@@ -46,37 +49,69 @@ export default class App extends Component {
       person: person,
       show: false,
       searchTerm: DEFAULT_QUERY,
-      result: null,
+      searchKey: '',
+      results: null,
     }
 
     this._setSearchStories = this._setSearchStories.bind(this);
-
+    this.needsToSearchStories = this.needsToSearchStories.bind(this);
     //one way to bind to class
     this._onSearchChange = this._onSearchChange.bind(this)
 
     //this._onDismiss = this._onDismiss.bind(this)
   }
 
+  needsToSearchStories(searchTerm) {
+    return !this.state.results[searchTerm];
+  }
+
   _setSearchStories(result) {
-    this.setState({ result })
+    const { hits, page } = result;
+    const { searchKey, results } = this.state;
+
+    const oldHits = results && results[searchKey]
+      ? results[searchKey].hits
+      : [];
+
+    const updatedHits = [
+      ...oldHits,
+      ...hits
+    ];
+
+    this.setState({ 
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedHits,
+          page 
+        }
+      } 
+    })
   }
 
   componentDidMount() {
     const { searchTerm } = this.state;
-
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
-    .then(data => data.json())
-    .then(result => this._setSearchStories(result))
-    .then(error => error)
+    this.setState({ searchKey: searchTerm })
+    this.fetchSearchTopStories(searchTerm);
   }
 
-  //_onDismiss(id) {
-  //  const isNotId = (item) => {
-  //    return item.objectID !== id
-  //  }
-  //  const updatedList = this.state.list.filter(isNotId)
-  //  this.setState({ list: updatedList })
-  //}
+  onSearchSubmit = (event) => {
+    const { searchTerm } = this.state;
+    this.setState({ searchKey: searchTerm })
+
+    if ( this.needsToSearchStories(searchTerm)) {
+      this.fetchSearchTopStories(searchTerm)
+    }
+
+    this.fetchSearchTopStories(searchTerm);
+    event.preventDefault();
+  }
+
+  fetchSearchTopStories = (searchTerm, page = 0) => {
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
+      .then(response => response.json())
+      .then(result => this._setSearchStories(result))
+      .catch(error => error);
+  }
 
   _onSearchChange(event) {
     this.setState({ searchTerm : event.target.value })
@@ -84,12 +119,20 @@ export default class App extends Component {
 
   //another way to bind to the class
   _onDismiss = (id) => {
+    const { searchKey, results } = this.state;
+    const { hits, page } = results[searchKey];
+
     const isNotId = (item) => (item.objectID !== id)
-    const updatedHits = this.state.result.hits.filter(isNotId)
+    const updatedHits = hits.filter(isNotId)
     //this.setState({ result: Object.assign({}, this.state.result, { hits: updatedHits }) })
-    this.setState({ 
       //object spread operator used here, because of the complex result object
-      result: { ...this.state.result, hits: updatedHits } 
+    this.setState({ 
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedHits,
+          page 
+        }
+      }
     })
   }
 
@@ -102,45 +145,60 @@ export default class App extends Component {
   }
 
   render() {
-    const { result, searchTerm, show } = this.state
-    const helloWorld = 'Welcome todse theade Rdoad tertao learn react';
-    if (!result) { return null }
+    const { results, searchTerm, searchKey  } = this.state
+    const page = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].page
+      ) || 0;
+
+    const list = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].hits
+    ) || [];
+
+   // if (!result) { return null }
     return (
       <div className="page">
         <div className="interactions">
-          <h2>{helloWorld}</h2>
           <p>{person.name}</p>
           <Search
             value={searchTerm}
             onChange={this._onSearchChange}
-            testing="Hello"
+            onSubmit={this.onSearchSubmit}
           >
             //The children only holds jsx
             Search
           </Search>
         </div>
-        { result
-          ? <Table
-            list={result.hits}
-            pattern={searchTerm}
+          <Table
+            list={list}
             _onDismiss={this._onDismiss}
           />
-         : null
-        }
+        
+        <div className="interactions">
+          <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
+            More
+          </Button>
+        </div>
       </div>
     )
   }
 }
 
 
-const Search = ({ children, value, onChange }) => {
+const Search = ({ children, value, onChange, onSubmit }) => {
   return (
-    <form>
-      {children} <input
+    <form onSubmit={onSubmit}>
+      <input
         type="text"
         value={value}
         onChange={onChange}
       />
+      <button type="submit">
+        {children}
+      </button>
     </form>
   );
 }
@@ -149,7 +207,7 @@ const Table = ({ list, _onDismiss, pattern }) => {
   return (
     <div className="table">
       {
-        list.filter(isSearched(pattern)).map(item =>
+        list.map(item =>
           <div key={item.objectID} className="table-row">
             <span style={{ width: '40%'}}>
               <a href={item.url}>{item.title}</a>
