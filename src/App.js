@@ -10,47 +10,20 @@ const PARAM_SEARCH = 'query=';
 const PARAM_PAGE = 'page=';
 const PARAM_HPP = 'hitsPerPage=';
 
-//const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
-
-const list = [
-  {
-    title: 'React',
-    url: 'https://reactjs.org/',
-    author: 'Jordan Walke',
-    num_comments: 3,
-    points: 4,
-    objectID: 0,
-  },
-  {
-    title: 'Redux',
-    url: 'https://redux.js.org/',
-    author: 'Dan Abramov, Andrew Clark',
-    num_comments: 2,
-    points: 5,
-    objectID: 1,
-  }
-]
-
-const person = {
-  name: 'John',
-  age: 34,
-  food: 'Chicken'
-}
-
 const isSearched = searchTerm => item => item.title.toLowerCase().includes(searchTerm.toLowerCase()); 
 
 export default class App extends Component {
-
+  _isMounted = false;
+  
   constructor(props){
     super(props)
 
     this.state = {
-      list: list,
-      person: person,
       show: false,
       searchTerm: DEFAULT_QUERY,
       searchKey: '',
       results: null,
+      error: null,
     }
 
     this._setSearchStories = this._setSearchStories.bind(this);
@@ -89,6 +62,8 @@ export default class App extends Component {
   }
 
   componentDidMount() {
+    this._isMounted = true;
+
     const { searchTerm } = this.state;
     this.setState({ searchKey: searchTerm })
     this.fetchSearchTopStories(searchTerm);
@@ -109,8 +84,8 @@ export default class App extends Component {
   fetchSearchTopStories = (searchTerm, page = 0) => {
     fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
       .then(response => response.json())
-      .then(result => this._setSearchStories(result))
-      .catch(error => error);
+      .then(result =>  this._isMounted && this._setSearchStories(result))
+      .catch(error => this._isMounted && this.setState({ error }));
   }
 
   _onSearchChange(event) {
@@ -129,7 +104,8 @@ export default class App extends Component {
     this.setState({ 
       results: {
         ...results,
-        [searchKey]: { hits: updatedHits,
+        [searchKey]: { 
+          hits: updatedHits,
           page 
         }
       }
@@ -145,7 +121,7 @@ export default class App extends Component {
   }
 
   render() {
-    const { results, searchTerm, searchKey  } = this.state
+    const { results, searchTerm, searchKey, error } = this.state
     const page = (
       results &&
       results[searchKey] &&
@@ -158,11 +134,10 @@ export default class App extends Component {
       results[searchKey].hits
     ) || [];
 
-   // if (!result) { return null }
+    if (error) { return <p>Something went wrong.</p>; }
     return (
       <div className="page">
         <div className="interactions">
-          <p>{person.name}</p>
           <Search
             value={searchTerm}
             onChange={this._onSearchChange}
@@ -172,10 +147,15 @@ export default class App extends Component {
             Search
           </Search>
         </div>
-          <Table
-            list={list}
-            _onDismiss={this._onDismiss}
-          />
+          { error
+            ? <div className="interactions">
+              <p>Something went wrong.</p>
+            </div>
+            : <Table
+              list={list}
+              _onDismiss={this._onDismiss}
+            />
+          }
         
         <div className="interactions">
           <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
@@ -203,7 +183,7 @@ const Search = ({ children, value, onChange, onSubmit }) => {
   );
 }
 
-const Table = ({ list, _onDismiss, pattern }) => {
+const Table = ({ list, _onDismiss }) => {
   return (
     <div className="table">
       {
